@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
 </script>
-
 <template>
-  <div class="w-full">
-    <router-view />
+  <div>
+    <p>footer</p>
   </div>
 </template>
 
