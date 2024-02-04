@@ -8,4 +8,4 @@ docker-down:
 	docker-compose down
 
 docker-push:
-	docker push yinsiyu/frontend-vue3:latest
+	docker push yinsiyu/frontend-vue3:v1.0
