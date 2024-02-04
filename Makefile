@@ -1,5 +1,5 @@
 build-dev-image:
-	docker build --platform=linux/amd64 -t yinsiyu/frontend-vue3 .
+	docker build --platform=linux/amd64 -t yinsiyu/frontend-vue3:v1.0 .
 
 docker-run:
 	docker-compose up -d
