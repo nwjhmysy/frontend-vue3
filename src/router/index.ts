@@ -8,7 +8,7 @@ import META_VALUE from '@/model/meta';
 import { LOCALES } from '@/constants';
 
 const getMeta = (route: RouteLocationNormalizedLoaded) => {
-  const lang = route.params.lang as LOCALES || LOCALES.ZH;
+  const lang = (route.params.lang as LOCALES) || LOCALES.ZH;
   const meta = META_VALUE[lang];
   const metaKey = route.name ? route.name?.toString() : 'common';
 
