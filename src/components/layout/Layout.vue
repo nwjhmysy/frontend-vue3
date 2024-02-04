@@ -8,10 +8,10 @@ import TurnLangButton from '../atoms/TurnLangButton.vue';
 
 const router = useRouter();
 const route = useRoute();
-// 切换路由时更新 lang
+// 切换路由时,更新 lang
 const { lang, updateLocale } = useLocale((route.params['lang'] as LOCALES | undefined) || browserLocale());
 
-// 改变语言 lang 时，改变路由
+// 改变语言 lang 时,改变路由
 watch(lang, (val) => {
   router.push({ params: { lang: val } });
 });
