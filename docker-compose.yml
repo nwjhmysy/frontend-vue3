@@ -2,8 +2,8 @@ version: '3'
 
 services:
   nginx:
-    image: yinsiyu/frontend-vue3:v1.1
+    image: yinsiyu/frontend-vue3:v1.2
     container_name: myvue3
     ports:
-      - "80:80"
+      - "443:443"
     restart: always
