@@ -234,27 +234,61 @@ const test:Record<LOCALES,xxx> = {
 
 #### 语言切换（SPA）
 
-在`Layout.vue`中将`lang`（语言索引）和`updateLocale`存入`provide`中
-
-`Layout.vue`：
-
-将路由和`ref`双向绑定
+使用了全局属性
 
 ```tsx
-// 切换路由时,更新 lang
-const { lang, updateLocale } = useLocale((route.params['lang'] as LOCALES | undefined) || browserLocale());
+import { onMounted, ref, watch } from 'vue'
+import { defineStore } from 'pinia'
+import { LOCALES } from '@/constants'
+import { browserLocale } from '@/hooks/useLocale'
+import { useRoute, useRouter } from 'vue-router'
 
-// 改变语言 lang 时,改变路由
-watch(lang, (val) => {
-  router.push({ params: { lang: val } });
-});
+export const useLangStore = defineStore('lang', () => {
+  const router = useRouter()
+  const route = useRoute()
+  const lang = ref<LOCALES>(browserLocale())
+
+  onMounted(() => {
+    switch (route.params.lang) {
+      case 'zh':
+        lang.value = LOCALES.ZH
+        break
+      case 'ja':
+        lang.value = LOCALES.JA
+        break
+      default:
+        lang.value = browserLocale()
+        break
+    }
+  })
+
+  // 改变语言 lang 时,改变路由
+  watch(lang, (val) => {
+    router.push({ params: { lang: val } })
+  })
+
+  const setLangJa = () => {
+    lang.value = LOCALES.JA
+  }
+
+  const setLangZh = () => {
+    lang.value = LOCALES.ZH
+  }
+	// 切换路由时使用 moveTo 方法
+  const moveTo = (path?: string) => {
+    if (path === route.path) return
+    router.push({ path: '/' + lang.value + path })
+  }
+
+  return { lang, setLangJa, setLangZh, moveTo }
+})
+
 ```
 
 #### 在页面中的使用（例）
 
 ```tsx
-const lang = inject<Ref<LOCALES>>('lang');
-const updateLocale = inject<(arg0: LOCALES) => void>('updateLocale');
+const {lang} = storeToRefs(useLangStore());
 
 const value = computed(() => {
   const key = lang?.value || LOCALES.ZH;
@@ -310,3 +344,106 @@ router.afterEach((to) => {
 });
 ```
 
+### 6.获取环境变量
+
+创建`.env`文件
+
+在代码中获取
+
+例如：
+
+```tsx
+import.meta.env.VITE_API_BATH_PATH
+```
+
+注意：
+
+在Vite中，环境变量有两种类型：以 `VITE_` 开头的变量会被暴露到客户端代码中，而其他的则不会。
+
+### 7.无法触发浏览器下载的问题
+
+后端接口
+
+功能：根据前端传来的文件路径获取本地的文件，然后将文件响应给前端
+
+代码：
+
+```go
+func (md *mdAPI) DownloadMDByCode(ctx *gin.Context) {
+	resp := response.Gin{Ctx: ctx}
+	param := DownloadMdAPIParam{}
+
+	// 获取参数 md_path 和 download_code
+	if err := ctx.ShouldBindQuery(&param); err != nil {
+		resp.ClientError("参数获取失败！")
+		return
+	}
+	// 判断 code 码
+	if param.DownloadCode != config.App.DownloadCode {
+		resp.ClientError("下载码错误！")
+		return
+	}
+
+	// 打开本地的 Markdown 文件
+	filePath := "mds/" + param.MdPath + ".md"
+	_, err := os.Stat(filePath)
+	if err != nil {
+		resp.ClientError("没找到文件！")
+		return
+	}
+
+	// 设置响应头，告诉浏览器这是一个文件下载
+	ctx.Header("Content-Description", "File Transfer")
+	ctx.Header("Content-Transfer-Encoding", "binary")
+	ctx.Header("Content-Type", "application/octet-stream")
+	ctx.Header("Content-Disposition", "attachment; filename="+strings.Replace(filePath, "/", "_", -1))
+	ctx.Header("Expires", "0")
+	ctx.Header("Cache-Control", "must-revalidate")
+	ctx.Header("Pragma", "public")
+	ctx.File(filePath)
+}
+```
+
+问题：前端请求该接口并不能触发浏览器下载行为。
+
+原因：
+
+使用了`axiox`进行请求，虽然已经设置了响应头来指示浏览器下载文件，但有时浏览器可能会忽略这些头部信息，导致文件不会自动下载。这可能是由于浏览器的安全策略或用户的浏览器设置所致。
+
+解决：
+
+在页面设置一个不可见的`a`标签链接指向下载接口的URL。
+
+如果依然需要请求的状态等，可以使用axios请求。
+
+等于是请求了两次，一次是获取请求状态等参数，一次是触发浏览器的下载。
+
+### 8.状态管理：`pinia`
+
+设置状态和`active`
+
+例如：
+
+设置-
+
+```tsx
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  const doubleCount = computed(() => count.value * 2)
+  function increment() {
+    count.value++
+  }
+
+  return { count, doubleCount, increment }
+})
+```
+
+使用-
+
+```tsx
+const { count } = storeToRefs(useCounterStore())
+const { doubleCount, increment } = useCounterStore()
+```
